@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Dilbert's red necktie, centred in the adaptive-icon safe zone -->
+    <path
+        android:fillColor="#B23A2E"
+        android:pathData="M48,28 L60,28 L64,39 L44,39 Z" />
+    <path
+        android:fillColor="#B23A2E"
+        android:pathData="M45,39 L63,39 L59,52 L67,74 L54,89 L41,74 L49,52 Z" />
+</vector>
