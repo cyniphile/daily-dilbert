@@ -25,14 +25,18 @@
     font:16px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
     -webkit-tap-highlight-color:transparent; overflow-x:hidden; }
   #app{ background:var(--paper); color:var(--ink);
-    min-height:100dvh; width:100%; display:flex; flex-direction:column; align-items:center;
-    padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom)); }
+    height:100dvh; width:100%; display:flex; flex-direction:column; align-items:center; overflow:hidden;
+    padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); }
   /* Force-landscape: spin the WHOLE interface 90deg so a portrait-locked phone,
      turned on its side, shows comic + buttons + text all upright together. */
   body.rot{ overflow:hidden; }
   body.rot #app{ position:absolute; top:0; left:100vw; width:100vh; height:100vw;
     transform-origin:0 0; transform:rotate(90deg);
     min-height:0; padding:8px 18px; overflow:hidden; }
+  /* Flipped landscape: same spin the other way, for a phone that lies on its other side. */
+  body.rot.flip #app{ left:0; top:100vh; transform:rotate(-90deg); }
+  /* In the spun view the sheet's height limit is the screen's short side. */
+  body.rot .sheet-card{ max-height:94vw; }
   body.rot footer{ display:none; }
   body.rot header{ margin-bottom:8px; padding-bottom:6px; }
   body.rot main{ gap:10px; }
@@ -43,11 +47,11 @@
   .count{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; letter-spacing:.06em; color:var(--muted); white-space:nowrap;
     cursor:pointer; padding:4px 2px; text-decoration:underline; text-decoration-style:dotted; text-decoration-color:var(--line); text-underline-offset:3px}
   .count:active{color:var(--accent)}
-  main{position:relative; width:100%; max-width:740px; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center}
+  main{position:relative; width:100%; max-width:740px; flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
   /* invisible tap zones over the left/right of the comic */
   .edge{position:absolute; top:0; bottom:0; width:22%; min-width:54px; max-width:150px;
     background:transparent; border:0; padding:0; margin:0; cursor:pointer; z-index:6;
-    -webkit-tap-highlight-color:transparent; -webkit-appearance:none; appearance:none; outline:0}
+    -webkit-tap-highlight-color:transparent; -webkit-appearance:none; appearance:none; outline:0; touch-action:none}
   .edge-prev{left:0} .edge-next{right:0}
   .edge:active{background:rgba(0,0,0,.05)}
   .edge:disabled{background:transparent; cursor:default}
@@ -56,11 +60,12 @@
   .hgroup{display:flex; align-items:center; gap:8px}
   .hbtn{font:inherit; font-size:15px; line-height:1; color:var(--muted); background:transparent;
     border:1px solid var(--line); border-radius:999px; width:34px; height:34px; cursor:pointer; padding:0; touch-action:manipulation; display:inline-flex; align-items:center; justify-content:center}
+  .hbtn[hidden]{display:none}
   .hbtn.wide{width:auto; padding:0 11px; gap:.15em; font-size:13px}
   .hbtn.on{color:var(--accent); border-color:var(--accent)}
   .hbtn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
   .clip.swap{opacity:.35}
-  .clip img{display:block; width:100%; height:auto; border-radius:1px; -webkit-user-drag:none}
+  .clip img{display:block; width:100%; height:auto; border-radius:1px; -webkit-user-drag:none; transform-origin:center; will-change:transform}
   .stamp{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:14px; letter-spacing:.04em; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0}
   .stamp .tick{color:var(--accent); margin-right:.45em}
   .note{font-size:14px; color:var(--muted); text-align:center; line-height:1.6; max-width:46ch; margin:0 auto}
@@ -89,6 +94,17 @@
   .favrow:last-child{border-bottom:0}
   .favrow .lbl{font-size:15px; cursor:pointer; flex:1}
   .favrow .rm{font:inherit; font-size:13px; color:var(--muted); background:transparent; border:1px solid var(--line); border-radius:999px; padding:5px 11px; cursor:pointer; margin-left:10px}
+  .menu-body{display:flex; flex-direction:column; gap:10px; padding-top:14px; overflow-y:auto; min-height:0}
+  .menu-lbl{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); text-align:center; margin-top:4px}
+  .seg{display:flex; gap:8px}
+  .seg button{flex:1; font:inherit; font-size:13px; color:var(--ink); background:transparent; border:1px solid var(--line); border-radius:999px; padding:11px 6px; cursor:pointer; touch-action:manipulation}
+  .seg button.on{color:var(--accent); border-color:var(--accent)}
+  .hbtn svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linejoin:round}
+  .toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:20; pointer-events:none;
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; letter-spacing:.06em;
+    color:#fff; background:rgba(20,18,16,.86); border-radius:999px; padding:8px 14px; white-space:nowrap}
+  .toast[hidden]{display:none}
+  .seg[hidden]{display:none}
   .sheet-empty{color:var(--muted); text-align:center; padding:26px 0; font-size:14px}
   .jump-body{display:flex; flex-direction:column; gap:16px; padding-top:14px}
   .jump-date{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:21px; color:var(--ink); text-align:center; letter-spacing:.01em}
@@ -106,13 +122,15 @@
   .off-prog .bar{height:100%; width:0; background:var(--accent); transition:width .2s ease}
   .off-clear{font:inherit; font-size:13px; color:var(--muted); background:transparent; border:0; cursor:pointer; text-decoration:underline; text-underline-offset:3px; align-self:center}
   @media (orientation:landscape){
-    body{padding-top:max(8px,env(safe-area-inset-top))}
-    header{margin-bottom:10px; padding-bottom:6px}
+    /* Short screen: give all the height to the strip. No gap below the header line. */
+    #app{padding-top:max(6px,env(safe-area-inset-top)); padding-bottom:max(8px,env(safe-area-inset-bottom))}
+    header{margin-bottom:0; padding-bottom:4px}
+    header, main{max-width:none}   /* use the full width, so a daily strip fills the height */
     main{gap:10px}
     footer{display:none}
     button.nav{min-height:42px; padding:9px 16px}
     .ghost{min-height:36px}
-    .clip{padding:10px}
+    .clip{padding:6px}
   }
   @media (prefers-reduced-motion: reduce){ .clip{transition:none} }
 </style>
@@ -124,10 +142,9 @@
     <span class="hgroup">
       <span class="count" id="count"></span>
       <button id="ret" class="hbtn" title="Back to where you were" aria-label="Back to where you were" hidden>↩</button>
-      <button id="fav" class="hbtn" title="Favorite" aria-label="Favorite">☆</button>
-      <button id="favlist" class="hbtn wide" title="Favorites" aria-label="Favorites">★&nbsp;<span id="favn">0</span></button>
-      <button id="dl" class="hbtn" title="Offline" aria-label="Offline" hidden>⤓</button>
-      <button id="rotate" class="hbtn" title="Landscape / portrait" aria-label="Toggle landscape">⟳</button>
+      <button id="copy" class="hbtn" title="Copy image" aria-label="Copy image" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5"/></svg></button>
+      <button id="rotate" class="hbtn" title="Turn the screen upside down" aria-label="Turn the screen upside down">⟳</button>
+      <button id="menubtn" class="hbtn" title="Menu" aria-label="Menu">⋯</button>
     </span>
   </header>
   <main>
@@ -135,6 +152,23 @@
     <button class="edge edge-prev" id="prev" aria-label="Previous strip"></button>
     <button class="edge edge-next" id="next" aria-label="Next strip"></button>
   </main>
+  <div class="sheet" id="menu" hidden>
+    <div class="sheet-card">
+      <div class="sheet-head"><b>Menu</b><button class="sheet-close" id="menu-close">Close</button></div>
+      <div class="menu-body">
+        <button type="button" class="jgo2" id="fav"></button>
+        <button type="button" class="jgo2" id="favlist">★&nbsp; Favorites (<span id="favn">0</span>)</button>
+        <button type="button" class="jgo2" id="dl" hidden>⤓&nbsp; Offline</button>
+        <div class="menu-lbl" id="orient-lbl">Orientation</div>
+        <div class="seg" id="orient">
+          <button type="button" data-o="0">Portrait</button>
+          <button type="button" data-o="1">Landscape</button>
+          <button type="button" data-o="2">Flipped</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast" hidden></div>
   <div class="sheet" id="sheet" hidden>
     <div class="sheet-card">
       <div class="sheet-head"><b>Favorites</b><button class="sheet-close" id="sheet-close">Close</button></div>
@@ -206,7 +240,7 @@ function render(src,dt){
     clip.innerHTML="";
     const img=new Image(); img.src=src; img.alt=`Dilbert, ${nice(dt)}`;
     clip.appendChild(img); clip.classList.remove("swap");
-    curImg=img; fit();
+    curImg=img; z=1; tx=ty=0; fit();
     $("stamp").innerHTML=`<span class="tick">▍</span>${nice(dt)}`;
   },140);
 }
@@ -225,31 +259,82 @@ function seek(dt,dir,tries){
 }
 const goNext=()=>{const nd=addDays(current,1); if(inRange(nd)) seek(nd,1,6);};
 const goPrev=()=>{const nd=addDays(current,-1); if(inRange(nd)) seek(nd,-1,6);};
-$("next").onclick=goNext; $("prev").onclick=goPrev;
+$("next").onclick=()=>{ if(!gest) goNext(); }; $("prev").onclick=()=>{ if(!gest) goPrev(); };
 document.addEventListener("keydown",e=>{
   if(e.key==="ArrowRight") goNext();
   if(e.key==="ArrowLeft") goPrev();
   if(e.key==="f"||e.key==="F") toggleFav();
 });
-let sx=0,sy=0; const area=$("clip");
-area.addEventListener("touchstart",e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
-area.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
-  if(document.body.classList.contains("rot")){
-    if(Math.abs(dy)>45&&Math.abs(dy)>Math.abs(dx)) (dy<0?goNext:goPrev)();
-  } else {
-    if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)) (dx<0?goNext:goPrev)();
-  }},{passive:true});
+/* ---- touch: swipe to page, pinch / double-tap to zoom, drag to pan when zoomed ---- */
+let sx=0,sy=0;
+let z=1,tx=0,ty=0;            // zoom factor and pan offset of the strip
+let pin=null,pan=null;        // pinch / pan gesture in progress
+let gest=false,lastTap=0;     // gest: this touch was a pinch or a pan, so it is not a tap or a swipe
+const ZMAX=6, stage=document.querySelector("main");
+const spun=()=>document.body.classList.contains("rot");   // browser-only CSS spin: no zoom there
+function applyZoom(){
+  const img=curImg; if(!img) return;
+  const mx=Math.max(0,(z*img.offsetWidth-clipEl.clientWidth)/2), my=Math.max(0,(z*img.offsetHeight-clipEl.clientHeight)/2);
+  tx=Math.min(mx,Math.max(-mx,tx)); ty=Math.min(my,Math.max(-my,ty));
+  img.style.transform=z>1?`translate(${tx}px,${ty}px) scale(${z})`:"";
+}
+// Zoom to nz so that the strip point that was under (x0,y0) at state s0 is now under (x,y).
+function zoomTo(nz,x,y,x0,y0,s0){
+  const r=clipEl.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+  z=Math.min(ZMAX,Math.max(1,nz));
+  tx=x-cx-z*(x0-cx-s0.tx)/s0.z; ty=y-cy-z*(y0-cy-s0.ty)/s0.z;
+  applyZoom();
+}
+const mid=t=>[(t[0].clientX+t[1].clientX)/2,(t[0].clientY+t[1].clientY)/2];
+const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+stage.addEventListener("touchstart",e=>{
+  const t=e.touches;
+  if(t.length===1){ sx=t[0].clientX; sy=t[0].clientY; gest=false; pin=null;
+    pan=z>1?{x:sx,y:sy,tx,ty}:null; }
+  else if(t.length===2&&!spun()){ const [x,y]=mid(t); pin={d:dist(t),x,y,s:{z,tx,ty}}; pan=null; gest=true; }
+},{passive:true});
+stage.addEventListener("touchmove",e=>{
+  const t=e.touches;
+  if(pin&&t.length>=2){ e.preventDefault(); const [x,y]=mid(t); zoomTo(pin.s.z*dist(t)/Math.max(1,pin.d),x,y,pin.x,pin.y,pin.s); }
+  else if(pan&&t.length===1){ e.preventDefault();
+    const dx=t[0].clientX-pan.x, dy=t[0].clientY-pan.y;
+    if(Math.hypot(dx,dy)>8) gest=true;
+    tx=pan.tx+dx; ty=pan.ty+dy; applyZoom(); }
+},{passive:false});
+stage.addEventListener("touchend",e=>{
+  const t=e.touches;
+  if(t.length>=2) return;
+  pin=null;
+  if(t.length===1){ pan=z>1?{x:t[0].clientX,y:t[0].clientY,tx,ty}:null; return; }   // pinch ended, one finger stays
+  pan=null;
+  if(z<1.05){ z=1; tx=ty=0; applyZoom(); }
+  const c=e.changedTouches[0], dx=c.clientX-sx, dy=c.clientY-sy;
+  if(gest){ setTimeout(()=>{gest=false;},350); return; }
+  if(z===1){
+    if(spun()){
+      const d=document.body.classList.contains("flip")?-dy:dy;   // flipped: strip's left is screen-down
+      if(Math.abs(dy)>45&&Math.abs(dy)>Math.abs(dx)){ (d<0?goNext:goPrev)(); return; }
+    } else if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)){ (dx<0?goNext:goPrev)(); return; }
+  }
+  // double-tap on the strip: zoom in at that point, or back out
+  if(Math.hypot(dx,dy)<12&&!spun()&&clipEl.contains(e.target)){
+    const now=Date.now();
+    if(now-lastTap<300){ lastTap=0; if(z>1){ z=1; tx=ty=0; applyZoom(); } else zoomTo(2.5,c.clientX,c.clientY,c.clientX,c.clientY,{z:1,tx:0,ty:0}); }
+    else lastTap=now;
+  }
+},{passive:true});
+stage.addEventListener("touchcancel",()=>{ pin=null; pan=null; },{passive:true});
 
 let favs=(()=>{try{return JSON.parse(load("favs")||"[]");}catch(e){return [];}})();
 let returnDate=null;
 $("ret").onclick=()=>{ const r=returnDate; returnDate=null; $("ret").hidden=true; if(r) seek(r,1,3); };
 function saveFavs(){save("favs",JSON.stringify(favs));}
 function updateFav(){const on=current&&favs.includes(iso(current));const b=$("fav");
-  b.classList.toggle("on",!!on); b.textContent=on?"★":"☆"; $("favn").textContent=favs.length;}
+  b.classList.toggle("on",!!on); b.textContent=on?"★\u00a0 Remove from favorites":"☆\u00a0 Favorite this strip"; $("favn").textContent=favs.length;}
 function toggleFav(){if(!current)return; const d=iso(current),i=favs.indexOf(d);
   if(i>=0)favs.splice(i,1); else favs.push(d); favs.sort(); saveFavs(); updateFav();}
 function openSheet(){const box=$("favitems"); box.innerHTML="";
-  if(!favs.length){box.innerHTML='<div class="sheet-empty">No favorites yet. Tap ☆ Favorite on any strip.</div>';}
+  if(!favs.length){box.innerHTML='<div class="sheet-empty">No favorites yet. Open the ⋯ menu to favorite a strip.</div>';}
   else favs.forEach(d=>{const dt=toDate(d); const row=document.createElement("div"); row.className="favrow";
     const lbl=document.createElement("span"); lbl.className="lbl"; lbl.textContent=nice(dt);
     lbl.onclick=()=>{ returnDate=current; $("ret").hidden=false; closeSheet(); seek(dt,1,3); };
@@ -258,7 +343,12 @@ function openSheet(){const box=$("favitems"); box.innerHTML="";
     row.append(lbl,rm); box.appendChild(row);});
   $("sheet").hidden=false;}
 function closeSheet(){$("sheet").hidden=true;}
-$("fav").onclick=toggleFav; $("favlist").onclick=openSheet; $("sheet-close").onclick=closeSheet;
+function closeMenu(){$("menu").hidden=true;}
+$("menubtn").onclick=()=>{$("menu").hidden=false;};
+$("menu-close").onclick=closeMenu;
+$("menu").addEventListener("click",e=>{if(e.target===$("menu"))closeMenu();});
+$("fav").onclick=toggleFav; $("favlist").onclick=()=>{closeMenu();openSheet();}; $("sheet-close").onclick=closeSheet;
+updateFav();
 $("sheet").addEventListener("click",e=>{if(e.target===$("sheet"))closeSheet();});
 
 /* ---- jump-to-date scrubber ---- */
@@ -288,35 +378,52 @@ const fmtMB = b => (b/1048576).toFixed(b>104857600?0:1)+" MB";
 function refreshOff(){
   if(!NATIVE) return;
   let info={count:0,bytes:0}; try{info=JSON.parse(NATIVE.info());}catch(e){}
-  $("offstat").textContent = info.count
+  $("offstat").textContent = info.complete
+    ? `All ${info.count.toLocaleString()} strips saved · ${fmtMB(info.bytes)} · works offline`
+    : info.count
     ? `${info.count.toLocaleString()} strips saved · ${fmtMB(info.bytes)}`
     : "Nothing downloaded yet";
   $("dl-all").textContent=`Download everything  (${ALL_DATES.length.toLocaleString()} · one ~1.4 GB archive)`;
+  $("dl-all").hidden=!!info.complete;      // nothing left to download
+  if(info.busy){ $("offprog").hidden=false; $("dl-all").disabled=true; }   // a download is in progress
 }
 function startDownloadAll(){
   // one ~1.4 GB archive download + local extract, instead of 12k requests
   $("offprog").hidden=false; $("offbar").style.width="0%";
-  document.querySelectorAll(".jgo2").forEach(b=>b.disabled=true);
+  $("dl-all").disabled=true;
   NATIVE.downloadAll();
 }
 window.ddProgress=(done,total)=>{ $("offbar").style.width=(100*done/Math.max(1,total)).toFixed(1)+"%"; };
-window.ddDone=()=>{ $("offprog").hidden=true; document.querySelectorAll(".jgo2").forEach(b=>b.disabled=false); refreshOff(); };
+window.ddDone=()=>{ $("offprog").hidden=true; $("dl-all").disabled=false; refreshOff(); };
 if(NATIVE){
   $("dl").hidden=false;
-  $("dl").onclick=()=>{ refreshOff(); $("offline").hidden=false; };
+  $("dl").onclick=()=>{ closeMenu(); refreshOff(); $("offline").hidden=false; };
   $("off-close").onclick=()=>{ $("offline").hidden=true; };
   $("offline").addEventListener("click",e=>{ if(e.target===$("offline")) $("offline").hidden=true; });
   $("dl-all").onclick=()=>startDownloadAll();
   $("offclear").onclick=()=>NATIVE.clear();
 }
+/* ---- copy the strip image to the clipboard (native only) ---- */
+let toastT;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>{t.hidden=true;},1600); }
+window.ddCopied=ok=>toast(ok?"Image copied":"Copy failed");
+if(NATIVE && NATIVE.copyImage){
+  $("copy").hidden=false;
+  $("copy").onclick=()=>{ const src=current&&urlFor(current); if(!src) return; toast("Copying…"); NATIVE.copyImage(src); };
+}
 /* Android hardware back: close the topmost open sheet before exiting (called from native) */
 window.ddOnBack=()=>{
-  for(const id of ["offline","jump","sheet"]){ const el=$(id); if(el && !el.hidden){ el.hidden=true; return true; } }
+  for(const id of ["offline","jump","sheet","menu"]){ const el=$(id); if(el && !el.hidden){ el.hidden=true; return true; } }
   return false;
 };
 
 /* ---- force-landscape: the whole #app spins 90deg; the strip just fits flat to the stage ---- */
-let rot=(load("rot")!=="0");          // default ON: user almost always views horizontally
+// 0 = portrait, 1 = landscape, 2 = landscape flipped (phone on its other side).
+// Default 1: user almost always views horizontally.
+let rot=(v=>v==="0"?0:v==="2"?2:1)(load("rot"));
+// In the app, Android holds the screen in landscape and turns it with the phone
+// (sensorLandscape in the manifest), so the CSS spin and its controls are not used.
+if(NATIVE){ rot=0; for(const id of ["rotate","orient","orient-lbl"]) $(id).hidden=true; }
 let curImg=null;
 const clipEl=$("clip");
 function fit(){
@@ -324,15 +431,22 @@ function fit(){
   const go=()=>{
     const iw=img.naturalWidth||3, ih=img.naturalHeight||1;
     // clientWidth/clientHeight are layout sizes, unaffected by the CSS rotation on #app
-    const w=Math.max(40, clipEl.clientWidth-28);
-    const h=Math.max(40, clipEl.clientHeight-28);
+    const pad=2*(parseFloat(getComputedStyle(clipEl).paddingTop)||0);
+    const w=Math.max(40, clipEl.clientWidth-pad);
+    const h=Math.max(40, clipEl.clientHeight-pad);
     const s=Math.min(w/iw, h/ih);
     img.style.cssText=`display:block;width:${Math.max(1,s*iw)}px;height:${Math.max(1,s*ih)}px;border-radius:1px`;
+    applyZoom();
   };
   if(img.naturalWidth) go(); else img.addEventListener("load",go,{once:true});
 }
-function applyRot(){ document.body.classList.toggle("rot",rot); $("rotate").classList.toggle("on",rot); }
-$("rotate").onclick=()=>{ rot=!rot; save("rot",rot?"1":"0"); applyRot(); requestAnimationFrame(()=>setTimeout(fit,30)); };
+function applyRot(){
+  document.body.classList.toggle("rot",rot>0); document.body.classList.toggle("flip",rot===2);
+  document.querySelectorAll("#orient button").forEach(b=>b.classList.toggle("on",+b.dataset.o===rot));
+}
+function setRot(v){ rot=v; save("rot",String(v)); applyRot(); requestAnimationFrame(()=>setTimeout(fit,30)); }
+$("rotate").onclick=()=>setRot(rot===1?2:1);   // one tap: turn the landscape view upside down
+document.querySelectorAll("#orient button").forEach(b=>b.onclick=()=>setRot(+b.dataset.o));
 applyRot();
 let rz; window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(fit,120);});
 window.addEventListener("orientationchange",()=>setTimeout(fit,200));

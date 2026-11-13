@@ -1,9 +1,14 @@
 package com.luke.dilbert
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.webkit.*
 import androidx.activity.ComponentActivity
+import androidx.core.content.FileProvider
 import androidx.webkit.WebViewAssetLoader
 import org.apache.commons.compress.archivers.sevenz.SevenZFile
 import java.io.File
@@ -18,6 +23,8 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var web: WebView
     @Volatile private var cancel = false
+    @Volatile private var downloading = false
+    private val archiveFiles = 12384   // strips in the archive
     private val strips: File by lazy { File(filesDir, "strips").apply { mkdirs() } }
 
     // Path-into-archive marker. Every strip URL is
@@ -67,6 +74,9 @@ class MainActivity : ComponentActivity() {
             addJavascriptInterface(Bridge(), "DilbertNative")
         }
 
+        // All strips saved: remove an archive left over from a download that was not necessary.
+        thread { if (isComplete()) deleteArchive() }
+
         setContentView(web)
         web.loadUrl("https://appassets.androidplatform.net/assets/index.html")
     }
@@ -95,20 +105,43 @@ class MainActivity : ComponentActivity() {
     private fun progress(step: Int) = callJs("window.ddProgress && window.ddProgress($step,1000)")
     private fun done() = callJs("window.ddDone && window.ddDone()")
 
+    /** Saved strips only: a ".part" file is an extraction that did not finish. */
+    private fun savedStrips(): List<File> =
+        (strips.listFiles() ?: emptyArray()).filter { !it.name.endsWith(".part") }
+
+    /** True when every strip of the archive is on disk, so there is nothing left to download. */
+    private fun isComplete(): Boolean = savedStrips().size >= archiveFiles
+
+    private fun deleteArchive() {
+        File(filesDir, "archive.7z").delete()
+        File(filesDir, "archive.7z.part").delete()
+    }
+
     private fun infoJson(): String {
-        val files = strips.listFiles() ?: emptyArray()
-        return """{"count":${files.size},"bytes":${files.sumOf { it.length() }}}"""
+        val files = savedStrips()
+        return """{"count":${files.size},"bytes":${files.sumOf { it.length() }},""" +
+            """"complete":${files.size >= archiveFiles},"busy":$downloading}"""
     }
 
     inner class Bridge {
         @JavascriptInterface fun info(): String = infoJson()
 
         @JavascriptInterface fun clear() {
+            if (downloading) return
             strips.listFiles()?.forEach { it.delete() }
+            deleteArchive()
             done()
         }
 
         @JavascriptInterface fun cancel() { cancel = true }
+
+        /** Puts the strip at [url] on the clipboard as an image; answers via ddCopied(ok). */
+        @JavascriptInterface fun copyImage(url: String) {
+            thread {
+                val ok = try { copyToClipboard(url); true } catch (e: Exception) { false }
+                callJs("window.ddCopied && window.ddCopied($ok)")
+            }
+        }
 
         /**
          * "Download everything" — fetch the single ~1.4 GB .7z (one request, resumable)
@@ -116,22 +149,58 @@ class MainActivity : ComponentActivity() {
          * download and 50–100% for extraction.
          */
         @JavascriptInterface fun downloadAll() {
+            // Everything is saved already: do not fetch the 1.4 GB archive again.
+            if (isComplete()) { deleteArchive(); done(); return }
+            synchronized(this@MainActivity) {
+                if (downloading) return      // one download at a time
+                downloading = true
+            }
             cancel = false
             thread {
                 val part = File(filesDir, "archive.7z.part")
                 val archive = File(filesDir, "archive.7z")
                 try {
                     if (!archive.exists()) {
-                        if (!downloadArchive(part)) { done(); return@thread }  // cancelled / failed
+                        if (!downloadArchive(part)) return@thread  // cancelled
                         part.renameTo(archive)
                     }
                     extractArchive(archive)
-                    archive.delete()
+                    if (!cancel) archive.delete()
                 } catch (e: Exception) {
                     // Leave archive.7z.part on disk so a re-tap resumes the download.
+                } finally {
+                    downloading = false
+                    done()
                 }
-                done()
             }
+        }
+    }
+
+    /**
+     * Copies one strip to the clipboard as a PNG (lossless, and the image type that the
+     * most apps accept on paste). Uses the saved strip if there is one, else the network.
+     */
+    private fun copyToClipboard(url: String) {
+        val rel = relOf(url) ?: throw IllegalArgumentException("not a strip URL")
+        val saved = File(strips, sha(rel))
+        val bytes = if (saved.exists()) saved.readBytes() else {
+            val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 15000
+                readTimeout = 30000
+            }
+            try { conn.inputStream.use { it.readBytes() } } finally { conn.disconnect() }
+        }
+        val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            ?: throw IllegalStateException("not an image")
+        val dir = File(cacheDir, "copy").apply { mkdirs() }
+        dir.listFiles()?.forEach { it.delete() }          // keep only the newest copy
+        val name = rel.substringAfterLast('/').take(10)   // "1989-04-17"
+        val out = File(dir, "dilbert-$name.png")
+        out.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        val uri = FileProvider.getUriForFile(this, "$packageName.files", out)
+        val clip = ClipData.newUri(contentResolver, "Dilbert $name", uri)
+        runOnUiThread {
+            (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(clip)
         }
     }
 

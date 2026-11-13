@@ -49,8 +49,10 @@ The HTML talks to Kotlin through an injected `window.DilbertNative` object. The 
 | JS → native | `DilbertNative.download(urlsJson)` | JSON array of IA image URLs; downloads them one by one (used for "this year" / "favorites") |
 | JS → native | `DilbertNative.downloadAll()` | fetch the single ~1.4 GB `.7z` and extract every strip (used for "Download everything") |
 | JS → native | `DilbertNative.clear()` | delete all saved strips |
+| JS → native | `DilbertNative.copyImage(url)` | put that strip on the clipboard as a PNG image |
 | native → JS | `window.ddProgress(done, total)` | progress during a download |
 | native → JS | `window.ddDone()` | a download batch (or `clear()`) finished |
+| native → JS | `window.ddCopied(ok)` | result of `copyImage` |
 | native → JS | `window.ddOnBack() : boolean` | closes the topmost open sheet on hardware back |
 
 Strips load as `<img>` from `archive.org/download/…`. `MainActivity.shouldInterceptRequest`
